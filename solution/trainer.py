@@ -96,32 +96,48 @@ class Trainer:
 
     def evaluate_model_on_dataloader(
             self, dataset: torch.utils.data.Dataset) -> tuple[float, float]:
-        """Evaluate model loss and accuracy for dataset.
 
-        Args:
-            dataset: the dataset to evaluate the model on.
-
-        Returns:
-            (avg_loss, accuracy): tuple containing the average loss and
-            accuracy across all dataset samples.
-        """
         self.model.eval()
         dataloader = DataLoader(dataset,
                                 batch_size=self.batch_size,
                                 shuffle=False)
-        total_loss = 0
-        avg_loss = 0
-        accuracy = 0
+
+        total_loss = 0.0
         nof_samples = 0
         correct_labeled_samples = 0
         print_every = max(int(len(dataloader) / 10), 1)
+        device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
-        for batch_idx, (inputs, targets) in enumerate(dataloader):
-            """INSERT YOUR CODE HERE."""
-            if batch_idx % print_every == 0 or batch_idx == len(dataloader) - 1:
-                print(f'Epoch [{self.epoch:03d}] | Loss: {avg_loss:.3f} | '
-                      f'Acc: {accuracy:.2f}[%] '
-                      f'({correct_labeled_samples}/{nof_samples})')
+        with torch.no_grad():
+            for batch_idx, (inputs, targets) in enumerate(dataloader):
+                inputs = inputs.to(device)
+                targets = targets.to(device)
+
+                outputs = self.model(inputs)
+                loss = self.criterion(outputs, targets)
+
+                bs = inputs.size(0)
+                total_loss += loss.item() * bs
+                nof_samples += bs
+
+                if nof_samples == 0:
+                    raise RuntimeError("there are zero samples in the dataset")
+
+                preds = torch.argmax(outputs, dim=1)
+                correct_labeled_samples += (preds == targets).sum().item()
+
+                avg_loss = total_loss / nof_samples
+                accuracy = 100.0 * correct_labeled_samples / nof_samples
+
+                if batch_idx % print_every == 0 or batch_idx == len(dataloader) - 1:
+                    print(f'Epoch [{self.epoch:03d}] | Loss: {avg_loss:.3f} | '
+                          f'Acc: {accuracy:.2f}[%] '
+                          f'({correct_labeled_samples}/{nof_samples})')
+
+
+
+        avg_loss = total_loss / nof_samples
+        accuracy = 100.0 * correct_labeled_samples / nof_samples
 
         return avg_loss, accuracy
 
