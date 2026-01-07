@@ -61,6 +61,31 @@ class Trainer:
 
         for batch_idx, (inputs, targets) in enumerate(train_dataloader):
             """INSERT YOUR CODE HERE."""
+
+            # Move data to the same device as the model (GPU/CPU)
+            inputs, targets = inputs.to(device), targets.to(device)
+
+            # 1. Reset gradients
+            self.optimizer.zero_grad()
+
+            # 2. Forward pass
+            outputs = self.model(inputs)
+            loss = self.criterion(outputs, targets)
+
+            # 3. Backward pass and optimization
+            loss.backward()
+            self.optimizer.step()
+
+            # 4. Statistics
+            total_loss += loss.item() * inputs.size(0)
+            _, predicted = outputs.max(1)
+            nof_samples += targets.size(0)
+            correct_labeled_samples += predicted.eq(targets).sum().item()
+
+            # Calculate running metrics for the print statement
+            avg_loss = total_loss / nof_samples
+            accuracy = 100. * correct_labeled_samples / nof_samples
+
             if batch_idx % print_every == 0 or \
                     batch_idx == len(train_dataloader) - 1:
                 print(f'Epoch [{self.epoch:03d}] | Loss: {avg_loss:.3f} | '
