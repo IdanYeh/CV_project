@@ -11,7 +11,7 @@ from common import OUTPUT_DIR, CHECKPOINT_DIR
 
 
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-
+print(device)
 
 @dataclass
 class LoggingParameters:
