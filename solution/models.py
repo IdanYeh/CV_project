@@ -4,6 +4,7 @@ import torch.nn.functional as F
 
 from torch import nn
 
+# from solution.utils import get_nof_params
 from xcpetion import build_xception_backbone
 
 
@@ -42,4 +43,26 @@ def get_xception_based_model() -> nn.Module:
     classification head stated in the exercise.
     """
     """INSERT YOUR CODE HERE, overrun return."""
-    return SimpleNet()
+    custom_network = build_xception_backbone(pretrained=True)
+    in_features = custom_network.fc.in_features
+    original_parameters = get_nof_params_2(custom_network.fc)
+    custom_network.fc = nn.Sequential(
+            nn.Linear(in_features, 1000), nn.ReLU(),
+            nn.Linear(1000, 256), nn.ReLU(),
+            nn.Linear(256, 64), nn.ReLU(),
+            nn.Linear(64, 2)
+        )
+    print("the number of parameters is {}".format(get_nof_params_2(custom_network)==23128786))
+    print("the amount of additional parameters is {}".format(get_nof_params_2(custom_network.fc)-original_parameters))
+    return custom_network
+
+def get_nof_params_2(model: nn.Module) -> int:
+    """Return the number of trainable model parameters.
+
+    Args:
+        model: nn.Module.
+
+    Returns:
+        The number of model parameters.
+    """
+    return sum(p.numel() for p in model.parameters() if p.requires_grad)
